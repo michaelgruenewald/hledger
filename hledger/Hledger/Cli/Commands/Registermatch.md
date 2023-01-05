@@ -1,4 +1,5 @@
-register-match\
+## register-match
+
 Print the one posting whose transaction description is closest to DESC, 
 in the style of the register command.
 If there are multiple equally good matches, it shows the most recent.

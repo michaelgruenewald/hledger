@@ -1,4 +1,5 @@
-tags\
+## tags
+
 List the tags used in the journal, or their values.
 
 _FLAGS
