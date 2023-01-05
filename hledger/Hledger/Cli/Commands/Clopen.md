@@ -1,0 +1,167 @@
+## clopen
+
+Prints a transaction that zeroes out one or more accounts, like the `close` command,
+and also prints an opposite transaction that restores those account balances.
+
+By detault it transfers asset and liability balances to,
+and then back from, `equity:opening/closing balances`.
+This can be useful eg for migrating important balances to a new file.
+
+See also the `close` command.
+
+_FLAGS
+
+Many people start a new journal file at the start of each year,
+to improve performance, keep old transactions out of reports, and/or reduce potential for errors.
+The clopen command can help migrate important account balances from the old file to the new one.
+It generates an opening transaction which you can put at the start of the new file,
+to initialise account balances there (like Ledger's `equity` command).
+
+It also generates an opposite closing transaction, 
+which you can put at the end of the old file to bring those account balances to zero.
+This is optional, but useful because then files can  be combined without disrupting balances
+(since the corresponding closing/opening transactions cancel each other out).
+Eg `hledger -f 2022.journal -f 2023.journal areg checking` for a two-year checking register.
+
+By default only accounts of type Asset (A) or Liability (L) are considered,
+since those are the balances most people need to migrate.
+You can use query arguments to select different accounts.
+Eg to also migrate equity balances, use `hledger clopen type:ALE`.
+
+The transaction descriptions are `closing balances` and `opening balances` by default;
+you can change these with the `--close-desc 'DESC'` and `--open-desc 'DESC'` options.
+
+By default, balances are closed to/opened from a single temporary account, `equity:opening/closing balances`.
+You can change this account name with `--close-acct ACCT` and/or `--open-acct ACCT`
+(if you specify only one of these, the same ACCT will be used for both closing and opening).
+
+By default the equity amount is left implicit.
+With `--x/--explicit` it will be shown explicitly,
+and if it involves multiple commodities, a separate posting will be generated for each commodity.
+With `--interleaved`, each equity posting is shown next to the corresponding source/destination posting.
+
+The default closing date is yesterday, or the journal's end date, whichever is later.
+You can change this by specifying a [report end date](#report-start--end-date),
+where "last day of the report period" will be the closing date.
+(Only the end date matters; a report start date will be ignored.)
+The opening date is always the day after the closing date.
+
+You can print only the closing transaction, or only the opening transaction,
+by using the `--close` or `--open` flag.
+
+### clopen and costs
+
+With `--show-costs`, any costs are shown, with separate postings for each cost.
+This is useful to preserve investment lots and their cost bases.
+If you have many currency conversion or investment transactions, it can generate very large journal entries.
+
+### clopen and balance assertions
+
+Balance assertions will be generated, verifying that the accounts have been
+reset to zero then restored to their previous balances.
+These provide useful error checking, but you can ignore them temporarily with `-I`,
+or remove them if you prefer.
+
+You probably should avoid filtering transactions by status or realness
+(`-C`, `-R`, `status:`), or generating postings (`--auto`),
+with this command, since the balance assertions would depend on these.
+
+Note custom posting dates like this one disrupt the balance assertions:
+
+```journal
+2020/12/30 a purchase made in december, cleared in january
+    expenses:food          5
+    assets:bank:checking  -5  ; date: 2021/1/2
+```
+
+To solve that, transfer the money to and from a temporary account,
+in effect splitting the multi-day transaction into two single-day transactions:
+
+```journal
+; in 2020.journal:
+2020/12/30 a purchase made in december, cleared in january
+    expenses:food          5
+    equity:pending        -5
+
+; in 2021.journal:
+2021/1/2 last year's transaction cleared
+    equity:pending         5 = 0
+    assets:bank:checking  -5
+```
+
+### clopen examples
+
+To close on 2022-12-31 and open on 2023-01-01, you could do:
+
+```shell
+$ hledger clopen -f 2022.journal -p 2022
+# copy/paste the closing transaction to the end of 2022.journal
+# copy/paste the opening transaction to the start of 2023.journal
+```
+
+You can automate more by generating one transaction at a time:
+
+```shell
+$ hledger clopen -f 2022.journal -p 2022 --open  >> 2023.journal  # generate this one first
+$ hledger clopen -f 2022.journal -p 2022 --close >> 2022.journal
+```
+
+### Hiding closing/opening transactions
+
+In multi-year reports, the closing/opening transactions cause
+some visual clutter in reports like `print` and `register`.
+You can use a query to exclude them, eg something like:
+
+```shell
+$ hledger print not:desc:'opening|closing'
+```
+
+But this also excludes the very first opening transaction, which is
+needed to set initial balances. One workaround is to manually add tags
+to all "opening balances"/closing balances" transactions except the first,
+like this:
+
+```journal
+; 2021.journal
+2021-06-01 first opening balances
+...
+2021-12-31 closing balances  ; clopen:2022
+...
+```
+
+```journal
+; 2022.journal
+2022-01-01 opening balances  ; clopen:2022
+...
+2022-12-31 closing balances  ; clopen:2023
+...
+```
+```journal
+; 2023.journal
+2023-01-01 opening balances  ; clopen:2023
+...etc.
+```
+
+Now with
+
+```journal
+; all.journal
+include 2021.journal
+include 2022.journal
+include 2023.journal
+```
+
+you could show a multi-year checking register while hiding the
+unimportant opening/closing transactions, like so:
+
+```shell
+$ hledger -f all.journal areg checking not:tag:clopen
+```
+
+or show 2022's year-end balance sheet like so
+(excluding the 2022-12-31 closing transaction which would make the balance sheet zero):
+
+```shell
+$ hledger -f all.journal bs -e2023 not:tag:clopen=2023
+```
+
