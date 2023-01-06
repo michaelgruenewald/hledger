@@ -24,6 +24,7 @@ module Hledger.Cli.Commands (
   ,module Hledger.Cli.Commands.Balancesheet
   ,module Hledger.Cli.Commands.Balancesheetequity
   ,module Hledger.Cli.Commands.Cashflow
+  ,module Hledger.Cli.Commands.Clopen
   ,module Hledger.Cli.Commands.Close
   ,module Hledger.Cli.Commands.Codes
   ,module Hledger.Cli.Commands.Commodities
@@ -66,6 +67,7 @@ import Hledger.Cli.Commands.Balancesheet
 import Hledger.Cli.Commands.Balancesheetequity
 import Hledger.Cli.Commands.Cashflow
 import Hledger.Cli.Commands.Check
+import Hledger.Cli.Commands.Clopen
 import Hledger.Cli.Commands.Close
 import Hledger.Cli.Commands.Codes
 import Hledger.Cli.Commands.Commodities
@@ -102,10 +104,11 @@ builtinCommands = [
   ,(balancesheetmode       , balancesheet)
   ,(cashflowmode           , cashflow)
   ,(checkmode              , check)
+  ,(clopenmode             , clopen)
   ,(closemode              , close)
   ,(codesmode              , codes)
   ,(commoditiesmode        , commodities)
-  ,(descriptionsmode        , descriptions)
+  ,(descriptionsmode       , descriptions)
   ,(diffmode               , diff)
   ,(filesmode              , files)
   ,(helpmode               , help')
@@ -161,7 +164,8 @@ commandsList progversion othercmds = [
   ," check                    check for various kinds of issue in the data"
   ,"+check-fancyassertions    check more powerful balance assertions"
   ,"+check-tagfiles           check file paths in tag values exist"
-  ," close                    generate balance-resetting transactions"
+  ," close                    generate a balance-zeroing transaction"
+  ," clopen                   generate balance-zeroing & -restoring transactions"
   ," diff                     compare account transactions in two journal files"
   ,"+interest                 generate interest transactions"
   ," rewrite                  generate extra postings, similar to print --auto"
