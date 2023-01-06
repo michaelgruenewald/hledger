@@ -1,19 +1,23 @@
 clopen
 
-Prints "closing" and "opening" transactions bringing all asset and
-liability balances (or other specified accounts) to and from zero.
-Before hledger 1.29, this was part of the close command.
+Prints a transaction that zeroes out one or more accounts, like the
+close command, but also prints an opposite transaction that restores
+those account balances.
+
+By detault it transfers asset and liability balances to, and then back
+from, 'equity:opening/closing balances'. This can be useful eg for
+migrating important balances to a new file.
+
+See also the close command.
 
 _FLAGS
 
 Many people start a new journal file at the start of each year, to
 improve performance, keep old transactions out of reports, and/or reduce
-errors.
-
-The clopen command helps migrate important account balances from the old
-file to the new one. It generates an opening transaction which you can
-put at the start of the new file, to restore the account balances there
-(like Ledger's equity command).
+errors. The clopen command helps migrate important account balances from
+the old file to the new one. It generates an opening transaction which
+you can put at the start of the new file, to restore the account
+balances there (like Ledger's equity command).
 
 It also generates an opposite closing transaction, which you can put at
 the end of the old file to bring those account balances to zero. This is
@@ -47,18 +51,10 @@ The default closing date is yesterday, or the journal's end date,
 whichever is later. You can change this by specifying a report end date,
 where "last day of the report period" will be the closing date. (Only
 the end date matters; a report start date will be ignored.) The opening
-date is always the day after the closing date. So eg to close on
-2022-12-31 and open on 2023-01-01, you could do
+date is always the day after the closing date.
 
-$ hledger clopen -f 2022.journal -p 2022
-# copy/paste the closing transaction to the end of 2022.journal
-# copy/paste the opening transaction to the start of 2023.journal
-
-You can use the --open or --close flag to generate one transaction at a
-time, which allows more automation:
-
-$ hledger clopen -f 2022.journal -p 2022 --open  >> 2023.journal  # generate this one first
-$ hledger clopen -f 2022.journal -p 2022 --close >> 2022.journal
+You can print only the closing transaction, or only the opening
+transaction, by using the --close or --open flag.
 
 clopen and costs
 
@@ -97,6 +93,19 @@ transactions:
 2021/1/2 last year's transaction cleared
     equity:pending         5 = 0
     assets:bank:checking  -5
+
+clopen examples
+
+To close on 2022-12-31 and open on 2023-01-01, you could do:
+
+$ hledger clopen -f 2022.journal -p 2022
+# copy/paste the closing transaction to the end of 2022.journal
+# copy/paste the opening transaction to the start of 2023.journal
+
+You can automate more by generating one transaction at a time:
+
+$ hledger clopen -f 2022.journal -p 2022 --open  >> 2023.journal  # generate this one first
+$ hledger clopen -f 2022.journal -p 2022 --close >> 2022.journal
 
 Hiding closing/opening transactions
 

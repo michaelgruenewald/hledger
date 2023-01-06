@@ -1,4 +1,5 @@
 print-unique
+
 Print transactions which do not reuse an already-seen description.
 
 _FLAGS
